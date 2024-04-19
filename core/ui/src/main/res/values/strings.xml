@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_unknown">Unknown error</string>
+    <string name="error_with_code">Error with code: %s</string>
+    <string name="error_with_description">Error with description: %s</string>
+    <string name="error_network_no_internet">Check internet connection or VPN</string>
+    <string name="error_network_400">Incorrect value for object type or key. The server is unable to understand and process the request.</string>
+    <string name="error_network_401">Incorrect password</string>
+    <string name="error_network_403">Query limit exceeded.</string>
+    <string name="error_network_429">Query limit exceeded.</string>
+    <string name="error_network_404">No results were found (on a search request), or object specified in URI does not exist.</string>
+    <string name="error_network_405">No results were found (on a search request), or object specified in URI does not exist.</string>
+    <string name="error_network_409">Integrity constraint was violated (e.g. when creating, object already exists).</string>
+    <string name="error_network_415">Unsupported/missing value for Accept/Content-Type header.</string>
+    <string name="error_network_500">The server encountered an unexpected condition which prevented it from fulfilling the request.</string>
+
+    <string name="search_placeholder_header">Search</string>
+    <string name="search_placeholder_title">Try entering a query in the search field</string>
+
+    <string name="empty_placeholder_header">Empty</string>
+    <string name="empty_placeholder_title">No data to display.\nTry change query or refresh.</string>
+</resources>

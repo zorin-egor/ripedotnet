@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_organizations_by_name_title">Organizations</string>
+    <string name="feature_organizations_by_name_search_title">Input organization name</string>
+</resources>
+

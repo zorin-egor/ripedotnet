@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_inet_num_by_ip_title">InetNum</string>
+    <string name="feature_inet_num_by_ip_search_title">Input ip address</string>
+    <string name="feature_inet_num_by_ip_organization_id">Id</string>
+    <string name="feature_inet_num_by_ip_organization_name">Name</string>
+    <string name="feature_inet_num_by_ip_organization_ip_addresses">Ip addresses</string>
+    <string name="feature_inet_num_by_ip_organization_descr">Description</string>
+    <string name="feature_inet_num_by_ip_none">None</string>
+    <string name="feature_inet_num_by_ip_organization_id_not_found">Organization id not found</string>
+    <string name="feature_inet_num_by_ip_organization_get_networks">Get networks</string>
+    <string name="feature_inet_num_by_ip_check_self_ip">Check self ip</string>
+</resources>

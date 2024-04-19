@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Sample ripe.net</string>
+    <string name="not_connected">No internet connection</string>
+</resources>
