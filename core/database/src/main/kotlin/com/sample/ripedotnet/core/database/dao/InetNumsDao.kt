@@ -14,7 +14,8 @@ interface InetNumsDao {
     @Query("SELECT * FROM InetNum")
     fun getInetNums(): Flow<List<InetNumEntity>>
 
-    @Query("SELECT * FROM InetNum WHERE InetNum.name LIKE '%' || :query || '%' LIMIT :limit OFFSET :offset")
+    @Query("SELECT * FROM InetNum WHERE InetNum.name LIKE '%' || :query || '%' " +
+            "ORDER BY InetNum.name LIMIT :limit OFFSET :offset")
     fun getInetNums(query: String, offset: Int, limit: Int = 30): Flow<List<InetNumEntity>>
 
     @Query("SELECT * FROM InetNum WHERE InetNum.ip LIKE '%' || :ip || '%' OR InetNum.query_ip LIKE :ip")

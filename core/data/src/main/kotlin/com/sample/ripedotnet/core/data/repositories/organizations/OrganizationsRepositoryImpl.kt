@@ -52,7 +52,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
 
             Timber.d("getOrganizationsByName() - db write")
             response?.networkToOrganizationsEntities()
-                ?.let { scope.launch { organizationsDao.insertAll(it) }}
+                ?.let { scope.launch { runCatching { organizationsDao.insertAll(it) }}}
 
             delay(5000)
 
@@ -78,7 +78,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
 
             Timber.d("getOrganizationById() - db write")
             response?.networkToOrganizationsEntities()
-                ?.let { scope.launch { organizationsDao.insertAll(it) }}
+                ?.let { scope.launch { runCatching { organizationsDao.insertAll(it) }}}
 
             Timber.d("getOrganizationById() - end")
         }

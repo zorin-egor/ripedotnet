@@ -20,7 +20,7 @@ interface OrganizationsDao {
         "WHERE Organizations.name LIKE :query OR Organizations.name LIKE '%' || ' ' || :query OR " +
                 "Organizations.name LIKE :query || ' ' || '%' OR " +
                 "Organizations.name LIKE '%' || ' ' || :query || ' ' || '%' " +
-        "LIMIT :limit OFFSET :offset"
+                "ORDER BY Organizations.org_id LIMIT :limit OFFSET :offset"
     )
     fun getOrganizations(query: String, offset: Int, limit: Int = 30): Flow<List<OrganizationsEntity>>
 
