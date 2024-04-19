@@ -27,6 +27,6 @@
 ## Screenshots
 <p align="center">
   <a>
-    //<img alt="ArchitectureComponentsSample" src="https://github.com/zorin-egor/ripedotnet/assets/13707343/4148691f-2744-468c-8b25-13b570a2e0e6" />
+    //<img alt="ArchitectureComponentsSample" src="https://github.com/zorin-egor/ripedotnet/assets/13707343/c8727676-6315-4d06-8697-22e04cc46217" />
   </a>
 </p>
