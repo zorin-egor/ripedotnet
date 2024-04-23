@@ -11,7 +11,6 @@ import com.sample.ripedotnet.core.network.NetworkDataSource
 import com.sample.ripedotnet.core.network.di.IoScope
 import com.sample.ripedotnet.core.network.ext.getResultOrThrow
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
@@ -52,9 +51,11 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
 
             Timber.d("getOrganizationsByName() - db write")
             response?.networkToOrganizationsEntities()
-                ?.let { scope.launch { runCatching { organizationsDao.insertAll(it) }}}
-
-            delay(5000)
+                ?.let { scope.launch {
+                    runCatching { organizationsDao.insertAll(it) }
+                        .exceptionOrNull()
+                        ?.let(Timber::e)
+                }}
 
             Timber.d("getOrganizationsByName() - end")
         }
@@ -78,7 +79,11 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
 
             Timber.d("getOrganizationById() - db write")
             response?.networkToOrganizationsEntities()
-                ?.let { scope.launch { runCatching { organizationsDao.insertAll(it) }}}
+                ?.let { scope.launch {
+                    runCatching { organizationsDao.insertAll(it) }
+                        .exceptionOrNull()
+                        ?.let(Timber::e)
+                }}
 
             Timber.d("getOrganizationById() - end")
         }

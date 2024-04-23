@@ -14,7 +14,7 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 import javax.inject.Inject
 import javax.inject.Singleton
 
-private const val BASE_URL = BuildConfig.BACKEND_URL
+internal const val BASE_URL = BuildConfig.BACKEND_URL
 const val SELF_IP_URL = BuildConfig.IP_URL
 
 @Singleton

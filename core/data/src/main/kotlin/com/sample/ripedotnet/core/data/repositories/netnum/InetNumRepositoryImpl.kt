@@ -51,7 +51,11 @@ internal class InetNumRepositoryImpl @Inject constructor(
             Timber.d("getInetNumByIp() - db write")
             response?.networkToInetNumEntities()
                 ?.map { it.copy(queryIp = ip) }
-                ?.let { scope.launch { runCatching { inetNumsDao.insertAll(it) }}}
+                ?.let { scope.launch {
+                    runCatching { inetNumsDao.insertAll(it) }
+                        .exceptionOrNull()
+                        ?.let(Timber::e)
+                }}
 
             Timber.d("getInetNumByIp() - end")
         }
@@ -61,7 +65,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
             Timber.d("getOrgInetNumsById($id)")
 
             Timber.d("getOrgInetNumsById() - db")
-            inetNumsDao.getInetNumsByOrgId(orgId = id)
+            inetNumsDao.getInetNumsByOrgId(orgId = id, offset = offset, limit = limit)
                 .take(1)
                 .catch { Timber.e(it) }
                 .mapNotNull { entities ->
@@ -83,7 +87,11 @@ internal class InetNumRepositoryImpl @Inject constructor(
             Timber.d("getOrgInetNumsById() - db write")
             response?.networkToInetNumEntities()
                 ?.map { it.copy(orgId = id) }
-                ?.let { scope.launch { runCatching { inetNumsDao.insertAll(it) }}}
+                ?.let { scope.launch {
+                    runCatching { inetNumsDao.insertAll(it) }
+                        .exceptionOrNull()
+                        ?.let(Timber::e)
+                }}
 
             Timber.d("getOrgInetNumsById() - end")
         }

@@ -21,8 +21,9 @@ interface InetNumsDao {
     @Query("SELECT * FROM InetNum WHERE InetNum.ip LIKE '%' || :ip || '%' OR InetNum.query_ip LIKE :ip")
     fun getInetNumByIp(ip: String): Flow<InetNumEntity?>
 
-    @Query("SELECT * FROM InetNum WHERE InetNum.org_id LIKE :orgId")
-    fun getInetNumsByOrgId(orgId: String): Flow<List<InetNumEntity>>
+    @Query("SELECT * FROM InetNum WHERE InetNum.org_id LIKE :orgId " +
+            "ORDER BY InetNum.ip LIMIT :limit OFFSET :offset")
+    fun getInetNumsByOrgId(orgId: String, offset: Int, limit: Int = 30): Flow<List<InetNumEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(user: InetNumEntity)
