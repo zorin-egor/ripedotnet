@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -32,10 +33,12 @@ internal class InetNumRepositoryImpl @Inject constructor(
             Timber.d("getInetNumByIp($ip)")
 
             Timber.d("getInetNumByIp() - db")
+            var item: InetNum? = null
             inetNumsDao.getInetNumByIp(ip = ip)
                 .take(1)
                 .catch { Timber.e(t = it, message = "dao") }
                 .mapNotNull { it?.toInetNumModel() }
+                .onEach { item = it }
                 .collect(::emit)
 
             Timber.d("getInetNumByIp() - network request")
@@ -45,6 +48,10 @@ internal class InetNumRepositoryImpl @Inject constructor(
             val resultModel = response?.networkToInetNumModels()
                 ?.firstOrNull()
                 ?.takeIf { it.orgId != null }
+
+            if (item != null && item == resultModel) {
+                return@flow
+            }
 
             emit(resultModel)
 
@@ -65,6 +72,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
             Timber.d("getOrgInetNumsById($id)")
 
             Timber.d("getOrgInetNumsById() - db")
+            val items = mutableListOf<InetNum>()
             inetNumsDao.getInetNumsByOrgId(orgId = id, offset = offset, limit = limit)
                 .take(1)
                 .catch { Timber.e(it) }
@@ -72,6 +80,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
                     entities.takeIf { it.isNotEmpty() }
                         ?.toInetNumModels()
                 }
+                .onEach(items::addAll)
                 .collect(::emit)
 
             Timber.d("getOrgInetNumsById() - network request")
@@ -81,6 +90,10 @@ internal class InetNumRepositoryImpl @Inject constructor(
             val resultModel = response?.networkToInetNumModels()
                 ?.map { it.copy(orgId = id) }
                 ?: emptyList()
+
+            if (items.isNotEmpty() && items == resultModel) {
+                return@flow
+            }
 
             emit(resultModel)
 

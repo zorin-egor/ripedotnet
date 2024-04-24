@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.mapNotNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -31,6 +32,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
             Timber.d("getOrganizationsByName($name, $offset, $limit)")
 
             Timber.d("getOrganizationsByName() - db")
+            val items = mutableListOf<Organization>()
             organizationsDao.getOrganizations(query = name, offset = offset, limit = limit)
                 .take(1)
                 .catch { Timber.e(it) }
@@ -38,16 +40,20 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                     entities.takeIf { it.isNotEmpty() }
                         ?.toOrgModels()
                 }
+                .onEach(items::addAll)
                 .collect(::emit)
 
             Timber.d("getOrganizationsByName() - network request")
-            val response = networkDatasource.getSearchByName(
-                query = name,
-                offset = offset,
-                limit = limit
-            ).getResultOrThrow()
+            val response = networkDatasource.getSearchByName(query = name, offset = offset, limit = limit)
+                .getResultOrThrow()
 
-            emit(response?.networkToOrganizationModel() ?: emptyList())
+            val result = response?.networkToOrganizationModel() ?: emptyList()
+
+            if (items.isNotEmpty() && items == result) {
+                return@flow
+            }
+
+            emit(result)
 
             Timber.d("getOrganizationsByName() - db write")
             response?.networkToOrganizationsEntities()
@@ -65,17 +71,23 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
             Timber.d("getOrganizationById($id)")
 
             Timber.d("getOrganizationById() - db")
+            var item: Organization? = null
             organizationsDao.getOrganizationById(id = id)
                 .take(1)
                 .catch { Timber.e(it) }
                 .mapNotNull { it?.toOrgModel() }
+                .onEach { item = it }
                 .collect(::emit)
 
             Timber.d("getOrganizationById() - network request")
-            val response = networkDatasource.getOrgDetails(orgId = id)
-                .getResultOrThrow()
+            val response = networkDatasource.getOrgDetails(orgId = id).getResultOrThrow()
+            val result = response?.networkToOrganizationModel()?.firstOrNull()
 
-            emit(response?.networkToOrganizationModel()?.firstOrNull())
+            if (item != null && item == result) {
+                return@flow
+            }
+
+            emit(result)
 
             Timber.d("getOrganizationById() - db write")
             response?.networkToOrganizationsEntities()

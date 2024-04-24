@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
 import timber.log.Timber
-import java.util.TreeSet
 import javax.inject.Inject
 
 
@@ -25,7 +24,7 @@ class GetOrganizationsByNameUseCase @Inject constructor(
         private const val LIMIT = 30
     }
 
-    private val organizationsSet = TreeSet<Organization> { o1, o2 -> o1.id.compareTo(o2.id) }
+    private val organizationsSet = LinkedHashSet<Organization>()
     private val mutex = Any()
     private val offset: Int get() = organizationsSet.size
     private var previousName = ""
