@@ -24,9 +24,9 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
         private const val LIMIT = 30
     }
 
-    private val inetNumsSet = LinkedHashSet<InetNum>()
+    private val inetNums = ArrayList<InetNum>()
     private val mutex = Any()
-    private val offset: Int get() = inetNumsSet.size
+    private val offset: Int get() = inetNums.size
     private var hasNext = true
     private var previousId = ""
 
@@ -35,16 +35,20 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
 
         synchronized(mutex) {
             if (!hasNext || previousId.isEmpty()) {
-                return flowOf(inetNumsSet.toList())
+                return flowOf(inetNums.toList())
             }
         }
 
         return inetNumsRepository.getInetNumsByOrgId(id = previousId, offset = offset, limit = LIMIT)
-            .map {
+            .map { new ->
                 synchronized(mutex) {
-                    hasNext = it.size >= LIMIT
-                    inetNumsSet.addAll(it)
-                    inetNumsSet.toList()
+                    hasNext = new.size >= LIMIT
+                    new.forEach { item ->
+                        if (inetNums.find { it.id == item.id } == null) {
+                            inetNums.add(item)
+                        }
+                    }
+                    inetNums.toList()
                 }
             }
             .onCompletion {
@@ -58,8 +62,8 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
         Timber.d("invoke($id) - new")
 
         synchronized(mutex) {
-            if (id == previousId && inetNumsSet.isNotEmpty()) {
-                return flowOf(inetNumsSet.toList())
+            if (id == previousId && inetNums.isNotEmpty()) {
+                return flowOf(inetNums.toList())
             }
         }
 
@@ -72,9 +76,9 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
                 synchronized(mutex) {
                     previousId = id
                     hasNext = it.size >= LIMIT
-                    inetNumsSet.clear()
-                    inetNumsSet.addAll(it)
-                    inetNumsSet.toList()
+                    inetNums.clear()
+                    inetNums.addAll(it)
+                    inetNums.toList()
                 }
             }
             .flowOn(dispatcher)

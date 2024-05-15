@@ -24,9 +24,9 @@ class GetOrganizationsByNameUseCase @Inject constructor(
         private const val LIMIT = 30
     }
 
-    private val organizationsSet = LinkedHashSet<Organization>()
+    private val organizations = ArrayList<Organization>()
     private val mutex = Any()
-    private val offset: Int get() = organizationsSet.size
+    private val offset: Int get() = organizations.size
     private var previousName = ""
     private var hasNext = true
 
@@ -35,16 +35,20 @@ class GetOrganizationsByNameUseCase @Inject constructor(
 
         synchronized(mutex) {
             if (!hasNext || previousName.isEmpty()) {
-                return flowOf(organizationsSet.toList())
+                return flowOf(organizations.toList())
             }
         }
 
         return organizationsRepository.getOrganizationsByName(name = previousName, offset = offset, limit = LIMIT)
-            .map {
+            .map { new ->
                 synchronized(mutex) {
-                    hasNext = it.size >= LIMIT
-                    organizationsSet.addAll(it)
-                    organizationsSet.toList()
+                    hasNext = new.size >= LIMIT
+                    new.forEach { item ->
+                        if (organizations.find { it.id == item.id } == null) {
+                            organizations.add(item)
+                        }
+                    }
+                    organizations.toList()
                 }
             }
             .onCompletion {
@@ -58,8 +62,8 @@ class GetOrganizationsByNameUseCase @Inject constructor(
         Timber.d("invoke($name, $previousName) - new")
 
         synchronized(mutex) {
-            if (name == previousName && organizationsSet.isNotEmpty()) {
-                return flowOf(organizationsSet.toList())
+            if (name == previousName && organizations.isNotEmpty()) {
+                return flowOf(organizations.toList())
             }
         }
 
@@ -72,9 +76,9 @@ class GetOrganizationsByNameUseCase @Inject constructor(
                 synchronized(mutex) {
                     previousName = name
                     hasNext = it.size >= LIMIT
-                    organizationsSet.clear()
-                    organizationsSet.addAll(it)
-                    organizationsSet.toList()
+                    organizations.clear()
+                    organizations.addAll(it)
+                    organizations.toList()
                 }
             }
             .flowOn(dispatcher)
