@@ -50,7 +50,18 @@ internal class InetNumByIpViewModel @Inject constructor(
     private var inetNumJob: Job? = null
 
     private fun Flow<InetNum?>.getInetNum(ip: String): Job =
-        catch {
+        map {
+            InetNumByIpUiState(
+                query = ip,
+                state = if (it != null) {
+                    InetNumByIpUiStates.Success(inetNum = it)
+                } else {
+                    InetNumByIpUiStates.Empty
+                }
+            )
+        }
+        .onEach(_state::emit)
+        .catch {
             val error = context.getErrorMessage(it)
             Timber.e(error)
 
@@ -63,17 +74,6 @@ internal class InetNumByIpViewModel @Inject constructor(
                 _action.emit(InetNumByIpActions.ShowError(error))
             }
         }
-        .map {
-            InetNumByIpUiState(
-                query = ip,
-                state = if (it != null) {
-                    InetNumByIpUiStates.Success(inetNum = it)
-                } else {
-                    InetNumByIpUiStates.Empty
-                }
-            )
-        }
-        .onEach(_state::emit)
         .launchIn(scope = viewModelScope)
 
     fun queryInetNumByIp(ip: String) {

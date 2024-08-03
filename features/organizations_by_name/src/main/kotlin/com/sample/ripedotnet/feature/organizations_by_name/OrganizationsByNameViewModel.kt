@@ -47,7 +47,18 @@ internal class OrganizationsByNameViewModel @Inject constructor(
     private var organizationsJob: Job? = null
 
     private fun Flow<List<Organization>>.getOrganizations(query: String, isDelay: Boolean = false): Job =
-        catch {
+        map {
+            OrganizationsByNameUiState(
+                query = query,
+                state = if (it.isEmpty()) {
+                    OrganizationsByNameUiStates.Empty
+                } else {
+                    OrganizationsByNameUiStates.Success(organizations = it, isBottomProgress = false)
+                }
+            )
+        }
+        .onEach(_state::emit)
+        .catch {
             val error = context.getErrorMessage(it)
             Timber.e(error)
 
@@ -62,17 +73,6 @@ internal class OrganizationsByNameViewModel @Inject constructor(
 
             setBottomProgress(false)
         }
-        .map {
-            OrganizationsByNameUiState(
-                query = query,
-                state = if (it.isEmpty()) {
-                    OrganizationsByNameUiStates.Empty
-                } else {
-                    OrganizationsByNameUiStates.Success(organizations = it, isBottomProgress = false)
-                }
-            )
-        }
-        .onEach(_state::emit)
         .launchIn(scope = viewModelScope)
 
     fun queryOrganizations(name: String) {

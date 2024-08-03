@@ -53,7 +53,18 @@ internal class InetNumsByOrgIdViewModel @Inject constructor(
     }
 
     private fun Flow<List<InetNum>>.getInetNumsByOrgId(): Job =
-        catch {
+        map {
+            if (it.isEmpty()) {
+                InetNumsByOrgIdUiState.Empty
+            } else {
+                InetNumsByOrgIdUiState.Success(
+                    inetNums = it,
+                    isBottomProgress = false
+                )
+            }
+        }
+        .onEach(_state::emit)
+        .catch {
             val error = context.getErrorMessage(it)
             Timber.e(error)
 
@@ -65,17 +76,6 @@ internal class InetNumsByOrgIdViewModel @Inject constructor(
 
             setBottomProgress(false)
         }
-        .map {
-            if (it.isEmpty()) {
-                InetNumsByOrgIdUiState.Empty
-            } else {
-                InetNumsByOrgIdUiState.Success(
-                    inetNums = it,
-                    isBottomProgress = false
-                )
-            }
-        }
-        .onEach(_state::emit)
         .launchIn(scope = viewModelScope)
 
     private fun getInetNumsByOrgId(id: String) {

@@ -35,12 +35,12 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
             val items = mutableListOf<Organization>()
             organizationsDao.getOrganizations(query = name, offset = offset, limit = limit)
                 .take(1)
-                .catch { Timber.e(it) }
                 .mapNotNull { entities ->
                     entities.takeIf { it.isNotEmpty() }
                         ?.toOrgModels()
                 }
                 .onEach(items::addAll)
+                .catch { Timber.e(it) }
                 .collect(::emit)
 
             Timber.d("getOrganizationsByName() - network request")
@@ -74,9 +74,9 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
             var item: Organization? = null
             organizationsDao.getOrganizationById(id = id)
                 .take(1)
-                .catch { Timber.e(it) }
                 .mapNotNull { it?.toOrgModel() }
                 .onEach { item = it }
+                .catch { Timber.e(it) }
                 .collect(::emit)
 
             Timber.d("getOrganizationById() - network request")

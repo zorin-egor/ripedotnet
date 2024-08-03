@@ -36,9 +36,9 @@ internal class InetNumRepositoryImpl @Inject constructor(
             var item: InetNum? = null
             inetNumsDao.getInetNumByIp(ip = ip)
                 .take(1)
-                .catch { Timber.e(t = it, message = "dao") }
                 .mapNotNull { it?.toInetNumModel() }
                 .onEach { item = it }
+                .catch { Timber.e(t = it, message = "dao") }
                 .collect(::emit)
 
             Timber.d("getInetNumByIp() - network request")
@@ -75,12 +75,12 @@ internal class InetNumRepositoryImpl @Inject constructor(
             val items = mutableListOf<InetNum>()
             inetNumsDao.getInetNumsByOrgId(orgId = id, offset = offset, limit = limit)
                 .take(1)
-                .catch { Timber.e(it) }
                 .mapNotNull { entities ->
                     entities.takeIf { it.isNotEmpty() }
                         ?.toInetNumModels()
                 }
                 .onEach(items::addAll)
+                .catch { Timber.e(it) }
                 .collect(::emit)
 
             Timber.d("getOrgInetNumsById() - network request")
