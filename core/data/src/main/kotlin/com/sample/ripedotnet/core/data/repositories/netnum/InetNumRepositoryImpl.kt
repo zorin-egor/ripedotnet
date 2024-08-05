@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
@@ -28,8 +29,8 @@ internal class InetNumRepositoryImpl @Inject constructor(
     @IoScope private val scope: CoroutineScope
 ) : InetNumRepository {
 
-    override fun getInetNumByIp(ip: String): Flow<InetNum?> =
-        flow<InetNum?> {
+    override fun getInetNumByIp(ip: String): Flow<Result<InetNum?>> =
+        flow<Result<InetNum?>> {
             Timber.d("getInetNumByIp($ip)")
 
             Timber.d("getInetNumByIp() - db")
@@ -38,6 +39,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
                 .take(1)
                 .mapNotNull { it?.toInetNumModel() }
                 .onEach { item = it }
+                .map { Result.success(it) }
                 .catch { Timber.e(t = it, message = "dao") }
                 .collect(::emit)
 
@@ -53,7 +55,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
                 return@flow
             }
 
-            emit(resultModel)
+            emit(Result.success(resultModel))
 
             Timber.d("getInetNumByIp() - db write")
             response?.networkToInetNumEntities()
@@ -65,10 +67,12 @@ internal class InetNumRepositoryImpl @Inject constructor(
                 }}
 
             Timber.d("getInetNumByIp() - end")
+        }.catch {
+            emit(Result.failure<InetNum?>(it))
         }
 
-    override fun getInetNumsByOrgId(id: String, offset: Int, limit: Int): Flow<List<InetNum>> =
-        flow<List<InetNum>>{
+    override fun getInetNumsByOrgId(id: String, offset: Int, limit: Int): Flow<Result<List<InetNum>>> =
+        flow<Result<List<InetNum>>>{
             Timber.d("getOrgInetNumsById($id)")
 
             Timber.d("getOrgInetNumsById() - db")
@@ -80,6 +84,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
                         ?.toInetNumModels()
                 }
                 .onEach(items::addAll)
+                .map { Result.success(it) }
                 .catch { Timber.e(it) }
                 .collect(::emit)
 
@@ -95,7 +100,7 @@ internal class InetNumRepositoryImpl @Inject constructor(
                 return@flow
             }
 
-            emit(resultModel)
+            emit(Result.success(resultModel))
 
             Timber.d("getOrgInetNumsById() - db write")
             response?.networkToInetNumEntities()
@@ -107,6 +112,8 @@ internal class InetNumRepositoryImpl @Inject constructor(
                 }}
 
             Timber.d("getOrgInetNumsById() - end")
+        }.catch {
+            emit(Result.failure<List<InetNum>>(it))
         }
 
     override fun getSelfIp(): Flow<String?> =

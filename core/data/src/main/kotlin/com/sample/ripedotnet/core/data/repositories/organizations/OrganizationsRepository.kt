@@ -5,9 +5,9 @@ import kotlinx.coroutines.flow.Flow
 
 interface OrganizationsRepository {
 
-    fun getOrganizationsByName(name: String, offset: Int, limit: Int = 30): Flow<List<Organization>>
+    fun getOrganizationsByName(name: String, offset: Int, limit: Int = 30): Flow<Result<List<Organization>>>
 
-    fun getOrganizationById(id: String): Flow<Organization?>
+    fun getOrganizationById(id: String): Flow<Result<Organization?>>
 
     suspend fun add(item: Organization)
 

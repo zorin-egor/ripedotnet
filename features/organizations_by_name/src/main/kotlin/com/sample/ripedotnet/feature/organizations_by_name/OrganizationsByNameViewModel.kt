@@ -46,15 +46,20 @@ internal class OrganizationsByNameViewModel @Inject constructor(
 
     private var organizationsJob: Job? = null
 
-    private fun Flow<List<Organization>>.getOrganizations(query: String, isDelay: Boolean = false): Job =
+    private fun Flow<Result<List<Organization>>>.getOrganizations(query: String, isDelay: Boolean = false): Job =
         map {
+            val items = it.getOrNull()
+            val error = it.exceptionOrNull()
+            val state = when {
+                it.isSuccess && items?.isNotEmpty() == true -> OrganizationsByNameUiStates.Success(organizations = items, isBottomProgress = false)
+                it.isSuccess && items?.isNotEmpty() == false -> OrganizationsByNameUiStates.Empty
+                it.isFailure && error != null -> throw error
+                else -> throw IllegalStateException("Unknown state")
+            }
+
             OrganizationsByNameUiState(
                 query = query,
-                state = if (it.isEmpty()) {
-                    OrganizationsByNameUiStates.Empty
-                } else {
-                    OrganizationsByNameUiStates.Success(organizations = it, isBottomProgress = false)
-                }
+                state = state
             )
         }
         .onEach(_state::emit)

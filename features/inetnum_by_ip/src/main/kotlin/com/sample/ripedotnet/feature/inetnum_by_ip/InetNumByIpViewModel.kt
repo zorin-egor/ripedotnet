@@ -49,15 +49,20 @@ internal class InetNumByIpViewModel @Inject constructor(
 
     private var inetNumJob: Job? = null
 
-    private fun Flow<InetNum?>.getInetNum(ip: String): Job =
+    private fun Flow<Result<InetNum?>>.getInetNum(ip: String): Job =
         map {
+            val item = it.getOrNull()
+            val error = it.exceptionOrNull()
+            val state = when {
+                it.isSuccess && item != null -> InetNumByIpUiStates.Success(inetNum = item)
+                it.isSuccess && item == null -> InetNumByIpUiStates.Empty
+                it.isFailure && error != null -> throw error
+                else -> throw IllegalStateException("Unknown state")
+            }
+
             InetNumByIpUiState(
                 query = ip,
-                state = if (it != null) {
-                    InetNumByIpUiStates.Success(inetNum = it)
-                } else {
-                    InetNumByIpUiStates.Empty
-                }
+                state = state
             )
         }
         .onEach(_state::emit)

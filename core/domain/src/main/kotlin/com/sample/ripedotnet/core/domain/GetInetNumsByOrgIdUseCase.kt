@@ -30,25 +30,30 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
     private var hasNext = true
     private var previousId = ""
 
-    operator fun invoke(): Flow<List<InetNum>> {
+    operator fun invoke(): Flow<Result<List<InetNum>>> {
         Timber.d("invoke($hasNext) - next")
 
         synchronized(mutex) {
             if (!hasNext || previousId.isEmpty()) {
-                return flowOf(inetNums.toList())
+                return flowOf(Result.success(inetNums.toList()))
             }
         }
 
         return inetNumsRepository.getInetNumsByOrgId(id = previousId, offset = offset, limit = LIMIT)
             .map { new ->
-                synchronized(mutex) {
-                    hasNext = new.size >= LIMIT
-                    new.forEach { item ->
-                        if (inetNums.find { it.id == item.id } == null) {
-                            inetNums.add(item)
+                val newItems = new.getOrNull()
+                if (new.isSuccess && newItems != null) {
+                    synchronized(mutex) {
+                        hasNext = newItems.size >= LIMIT
+                        newItems.forEach { item ->
+                            if (inetNums.find { it.id == item.id } == null) {
+                                inetNums.add(item)
+                            }
                         }
+                        Result.success(inetNums.toList())
                     }
-                    inetNums.toList()
+                } else {
+                    new
                 }
             }
             .onCompletion {
@@ -58,12 +63,12 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
             .flowOn(dispatcher)
     }
 
-    operator fun invoke(id: String): Flow<List<InetNum>> {
+    operator fun invoke(id: String): Flow<Result<List<InetNum>>> {
         Timber.d("invoke($id) - new")
 
         synchronized(mutex) {
             if (id == previousId && inetNums.isNotEmpty()) {
-                return flowOf(inetNums.toList())
+                return flowOf(Result.success(inetNums.toList()))
             }
         }
 
@@ -72,13 +77,18 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
                 Timber.d("invoke($id) - onStart")
                 delay(500)
             }
-            .map {
-                synchronized(mutex) {
-                    previousId = id
-                    hasNext = it.size >= LIMIT
-                    inetNums.clear()
-                    inetNums.addAll(it)
-                    inetNums.toList()
+            .map { new ->
+                val newItems = new.getOrNull()
+                if (new.isSuccess && newItems != null) {
+                    synchronized(mutex) {
+                        previousId = id
+                        hasNext = newItems.size >= LIMIT
+                        inetNums.clear()
+                        inetNums.addAll(newItems)
+                        Result.success(inetNums.toList())
+                    }
+                } else {
+                    new
                 }
             }
             .flowOn(dispatcher)

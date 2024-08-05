@@ -52,15 +52,18 @@ internal class InetNumsByOrgIdViewModel @Inject constructor(
         getInetNumsByOrgId(id = orgId)
     }
 
-    private fun Flow<List<InetNum>>.getInetNumsByOrgId(): Job =
+    private fun Flow<Result<List<InetNum>>>.getInetNumsByOrgId(): Job =
         map {
-            if (it.isEmpty()) {
-                InetNumsByOrgIdUiState.Empty
-            } else {
-                InetNumsByOrgIdUiState.Success(
-                    inetNums = it,
+            val items = it.getOrNull()
+            val error = it.exceptionOrNull()
+            when {
+                it.isSuccess && items?.isNotEmpty() == true -> InetNumsByOrgIdUiState.Success(
+                    inetNums = items,
                     isBottomProgress = false
                 )
+                it.isSuccess && items?.isNotEmpty() == false -> InetNumsByOrgIdUiState.Empty
+                it.isFailure && error != null -> throw error
+                else -> throw IllegalStateException("Unknown state")
             }
         }
         .onEach(_state::emit)

@@ -14,7 +14,7 @@ class GetOrganizationByIdUseCase @Inject constructor(
     private val organizationsRepository: OrganizationsRepository,
     @Dispatcher(Dispatchers.IO) val dispatcher: CoroutineDispatcher
 ) {
-    operator fun invoke(id: String): Flow<Organization?> =
+    operator fun invoke(id: String): Flow<Result<Organization?>> =
         organizationsRepository.getOrganizationById(id = id)
             .flowOn(dispatcher)
 }

@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
@@ -27,8 +28,8 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
     @IoScope private val scope: CoroutineScope
 ) : OrganizationsRepository {
 
-    override fun getOrganizationsByName(name: String, offset: Int, limit: Int): Flow<List<Organization>> =
-        flow<List<Organization>> {
+    override fun getOrganizationsByName(name: String, offset: Int, limit: Int): Flow<Result<List<Organization>>> =
+        flow<Result<List<Organization>>> {
             Timber.d("getOrganizationsByName($name, $offset, $limit)")
 
             Timber.d("getOrganizationsByName() - db")
@@ -40,6 +41,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                         ?.toOrgModels()
                 }
                 .onEach(items::addAll)
+                .map { Result.success(it) }
                 .catch { Timber.e(it) }
                 .collect(::emit)
 
@@ -53,7 +55,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                 return@flow
             }
 
-            emit(result)
+            emit(Result.success(result))
 
             Timber.d("getOrganizationsByName() - db write")
             response?.networkToOrganizationsEntities()
@@ -64,10 +66,12 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                 }}
 
             Timber.d("getOrganizationsByName() - end")
+        }.catch {
+            emit(Result.failure<List<Organization>>(it))
         }
 
-    override fun getOrganizationById(id: String): Flow<Organization?> =
-        flow<Organization?> {
+    override fun getOrganizationById(id: String): Flow<Result<Organization?>> =
+        flow<Result<Organization?>> {
             Timber.d("getOrganizationById($id)")
 
             Timber.d("getOrganizationById() - db")
@@ -76,6 +80,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                 .take(1)
                 .mapNotNull { it?.toOrgModel() }
                 .onEach { item = it }
+                .map { Result.success(it) }
                 .catch { Timber.e(it) }
                 .collect(::emit)
 
@@ -87,7 +92,7 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                 return@flow
             }
 
-            emit(result)
+            emit(Result.success(result))
 
             Timber.d("getOrganizationById() - db write")
             response?.networkToOrganizationsEntities()
@@ -98,6 +103,8 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
                 }}
 
             Timber.d("getOrganizationById() - end")
+        }.catch {
+            emit(Result.failure(it))
         }
 
     override suspend fun add(item: Organization) = organizationsDao.insert(item.toOrganizationEntity())

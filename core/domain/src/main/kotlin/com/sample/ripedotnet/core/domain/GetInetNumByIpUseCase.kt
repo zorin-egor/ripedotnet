@@ -19,9 +19,9 @@ class GetInetNumByIpUseCase @Inject constructor(
     @Dispatcher(Dispatchers.IO) val dispatcher: CoroutineDispatcher
 ) {
 
-    operator fun invoke(ip: String): Flow<InetNum?> {
+    operator fun invoke(ip: String): Flow<Result<InetNum?>> {
         if (!isIpValid(ip)) {
-            return flowOf(null)
+            return flowOf(Result.failure(IllegalArgumentException("Not valid")))
         }
         return inetNumsRepository.getInetNumByIp(ip = ip)
             .onStart { delay(500) }
