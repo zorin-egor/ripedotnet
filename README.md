@@ -24,6 +24,14 @@
 └──gradle-plugins.......... Convention gradle plugin for forwarding dependencies between modules
 ```
 
+## Compose compiler metrics
+
+Run the following command to get and analyse compose compiler metrics:
+
+```bash
+./gradlew assembleRelease -PenableComposeCompilerMetrics=true -PenableComposeCompilerReports=true
+```
+
 ## Screenshots
 <p align="center">
   <a>

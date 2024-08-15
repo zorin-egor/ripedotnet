@@ -48,10 +48,10 @@ fun SearchTextField(
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val onSearchExplicitlyTriggered = {
+    val onSearchExplicitlyTriggered = remember {{
         keyboardController?.hide()
         onSearchTriggered(searchQuery)
-    }
+    }}
 
     TextField(
         colors = TextFieldDefaults.colors(
@@ -98,9 +98,9 @@ fun SearchTextField(
             }
             .testTag("searchTextField")
             .apply {
-               if (isFocusRequest) {
-                   focusRequester(focusRequester)
-               }
+                if (isFocusRequest) {
+                    focusRequester(focusRequester)
+                }
             },
         shape = RoundedCornerShape(16.dp),
         value = searchQuery,

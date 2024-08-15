@@ -33,6 +33,7 @@ import com.sample.ripedotnet.app.navigation.TopLevelDestination
 import com.sample.ripedotnet.core.designsystem.component.AppBackground
 import com.sample.ripedotnet.core.designsystem.component.AppNavigationBar
 import com.sample.ripedotnet.core.designsystem.component.AppNavigationBarItem
+import kotlinx.collections.immutable.ImmutableList
 import timber.log.Timber
 import com.sample.ripedotnet.app.R as AppR
 
@@ -93,7 +94,7 @@ fun AppRoot(appState: AppState) {
 
 @Composable
 private fun AppBottomBar(
-    destinations: List<TopLevelDestination>,
+    destinations: ImmutableList<TopLevelDestination>,
     onNavigateToDestination: (TopLevelDestination) -> Unit,
     currentDestination: NavDestination?,
     modifier: Modifier = Modifier,

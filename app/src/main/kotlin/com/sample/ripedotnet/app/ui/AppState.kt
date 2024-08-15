@@ -16,6 +16,8 @@ import com.sample.ripedotnet.core.network.connection.NetworkMonitor
 import com.sample.ripedotnet.feature.inetnum_by_ip.navigation.navigateToInetNumByIp
 import com.sample.ripedotnet.feature.organizations_by_name.navigation.navigateToOrganizationsByName
 import com.sample.ripedotnet.feature.settings.navigation.navigateToSettings
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.map
@@ -60,7 +62,8 @@ class AppState(
             initialValue = false,
         )
 
-    val topLevelDestinations: List<TopLevelDestination> = TopLevelDestination.entries
+    val topLevelDestinations: ImmutableList<TopLevelDestination> =
+        TopLevelDestination.entries.toImmutableList()
 
     fun navigateToTopLevelDestination(topLevelDestination: TopLevelDestination) {
         val topLevelNavOptions = navOptions {
