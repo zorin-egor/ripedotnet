@@ -16,10 +16,6 @@ internal fun Project.configureAndroidCompose(
             compose = true
         }
 
-        composeOptions {
-            kotlinCompilerExtensionVersion = libs.findVersion("androidxComposeCompiler").get().toString()
-        }
-
         dependencies {
             add("implementation", platform(libs.findLibrary("androidx.compose.bom").get()))
             add("implementation", libs.findLibrary("androidx-compose-ui-tooling-preview").get())
