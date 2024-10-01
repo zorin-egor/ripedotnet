@@ -15,7 +15,7 @@ fun ResponseBody.getError(): String? {
 
 fun <T> Response<T>.getResultOrThrow(): T? {
     return when(val code = code()) {
-        HttpURLConnection.HTTP_OK -> body()
+        in HttpURLConnection.HTTP_OK until HttpURLConnection.HTTP_MULT_CHOICE -> body()
         else -> throw NetworkException(errorCode = code, errorDesc = errorBody()?.getError())
     }
 }

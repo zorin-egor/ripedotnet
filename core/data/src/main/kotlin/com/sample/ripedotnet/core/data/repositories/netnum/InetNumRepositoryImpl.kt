@@ -13,10 +13,11 @@ import com.sample.ripedotnet.core.network.retrofit.SELF_IP_URL
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import timber.log.Timber
@@ -34,11 +35,9 @@ internal class InetNumRepositoryImpl @Inject constructor(
             Timber.d("getInetNumByIp($ip)")
 
             Timber.d("getInetNumByIp() - db")
-            var item: InetNum? = null
             inetNumsDao.getInetNumByIp(ip = ip)
                 .take(1)
                 .mapNotNull { it?.toInetNumModel() }
-                .onEach { item = it }
                 .map { Result.success(it) }
                 .catch { Timber.e(t = it, message = "dao") }
                 .collect(::emit)
@@ -51,40 +50,31 @@ internal class InetNumRepositoryImpl @Inject constructor(
                 ?.firstOrNull()
                 ?.takeIf { it.orgId != null }
 
-            if (item != null && item == resultModel) {
-                return@flow
-            }
-
             emit(Result.success(resultModel))
 
             Timber.d("getInetNumByIp() - db write")
             response?.networkToInetNumEntities()
                 ?.map { it.copy(queryIp = ip) }
-                ?.let { scope.launch {
-                    runCatching { inetNumsDao.insertAll(it) }
-                        .exceptionOrNull()
-                        ?.let(Timber::e)
-                }}
+                ?.let {
+                    scope.launch {
+                        runCatching { inetNumsDao.insertAll(it) }
+                            .exceptionOrNull()?.let(Timber::e)
+                    }
+                }
 
             Timber.d("getInetNumByIp() - end")
-        }.catch {
-            emit(Result.failure<InetNum?>(it))
-        }
+        }.catch { emit(Result.failure<InetNum?>(it)) }
+            .distinctUntilChanged()
 
     override fun getInetNumsByOrgId(id: String, offset: Int, limit: Int): Flow<Result<List<InetNum>>> =
         flow<Result<List<InetNum>>>{
             Timber.d("getOrgInetNumsById($id)")
 
             Timber.d("getOrgInetNumsById() - db")
-            val items = mutableListOf<InetNum>()
             inetNumsDao.getInetNumsByOrgId(orgId = id, offset = offset, limit = limit)
                 .take(1)
-                .mapNotNull { entities ->
-                    entities.takeIf { it.isNotEmpty() }
-                        ?.toInetNumModels()
-                }
-                .onEach(items::addAll)
-                .map { Result.success(it) }
+                .filterNot { it.isEmpty() }
+                .map { Result.success(it.toInetNumModels()) }
                 .catch { Timber.e(it) }
                 .collect(::emit)
 
@@ -92,29 +82,24 @@ internal class InetNumRepositoryImpl @Inject constructor(
             val response = networkDatasource.getOrgNetworks(query = id, offset = offset, limit = limit)
                     .getResultOrThrow()
 
-            val resultModel = response?.networkToInetNumModels()
-                ?.map { it.copy(orgId = id) }
-                ?: emptyList()
+            val resultModels = response?.networkToInetNumModels()
+                ?.map { it.copy(orgId = id) } ?: emptyList()
 
-            if (items.isNotEmpty() && items == resultModel) {
-                return@flow
-            }
-
-            emit(Result.success(resultModel))
+            emit(Result.success(resultModels))
 
             Timber.d("getOrgInetNumsById() - db write")
             response?.networkToInetNumEntities()
                 ?.map { it.copy(orgId = id) }
-                ?.let { scope.launch {
-                    runCatching { inetNumsDao.insertAll(it) }
-                        .exceptionOrNull()
-                        ?.let(Timber::e)
-                }}
+                ?.let {
+                    scope.launch {
+                        runCatching { inetNumsDao.insertAll(it) }
+                            .exceptionOrNull()?.let(Timber::e)
+                    }
+                }
 
             Timber.d("getOrgInetNumsById() - end")
-        }.catch {
-            emit(Result.failure<List<InetNum>>(it))
-        }
+        }.catch { emit(Result.failure<List<InetNum>>(it)) }
+            .distinctUntilChanged()
 
     override fun getSelfIp(): Flow<String?> =
         flow {
