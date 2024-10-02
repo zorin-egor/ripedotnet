@@ -25,7 +25,7 @@ class GetOrganizationsByNameUseCase @Inject constructor(
     }
 
     private val organizations = ArrayList<Organization>()
-    private val mutex = Any()
+    private val lock = Any()
     private val offset: Int get() = organizations.size
     private var previousName = ""
     private var hasNext = true
@@ -33,7 +33,7 @@ class GetOrganizationsByNameUseCase @Inject constructor(
     operator fun invoke(): Flow<Result<List<Organization>>> {
         Timber.d("invoke($hasNext, $previousName) - next")
 
-        synchronized(mutex) {
+        synchronized(lock) {
             if (!hasNext || previousName.isEmpty()) {
                 return flowOf(Result.success(organizations.toList()))
             }
@@ -41,9 +41,9 @@ class GetOrganizationsByNameUseCase @Inject constructor(
 
         return organizationsRepository.getOrganizationsByName(name = previousName, offset = offset, limit = LIMIT)
             .map { new ->
-                val newItems = new.getOrNull()
-                if (new.isSuccess && newItems != null) {
-                    synchronized(mutex) {
+                if (new.isSuccess) {
+                    synchronized(lock) {
+                        val newItems = new.getOrDefault(emptyList())
                         hasNext = newItems.size >= LIMIT
                         newItems.forEach { item ->
                             if (organizations.find { it.id == item.id } == null) {
@@ -66,7 +66,7 @@ class GetOrganizationsByNameUseCase @Inject constructor(
     operator fun invoke(name: String): Flow<Result<List<Organization>>> {
         Timber.d("invoke($name, $previousName) - new")
 
-        synchronized(mutex) {
+        synchronized(lock) {
             if (name == previousName && organizations.isNotEmpty()) {
                 return flowOf(Result.success(organizations.toList()))
             }
@@ -78,9 +78,9 @@ class GetOrganizationsByNameUseCase @Inject constructor(
                 delay(500)
             }
             .map { new ->
-                val newItems = new.getOrNull()
-                if (new.isSuccess && newItems != null) {
-                    synchronized(mutex) {
+                if (new.isSuccess) {
+                    synchronized(lock) {
+                        val newItems = new.getOrDefault(emptyList())
                         previousName = name
                         hasNext = newItems.size >= LIMIT
                         organizations.clear()

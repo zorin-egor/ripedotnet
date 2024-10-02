@@ -25,7 +25,7 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
     }
 
     private val inetNums = ArrayList<InetNum>()
-    private val mutex = Any()
+    private val lock = Any()
     private val offset: Int get() = inetNums.size
     private var hasNext = true
     private var previousId = ""
@@ -33,7 +33,7 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
     operator fun invoke(): Flow<Result<List<InetNum>>> {
         Timber.d("invoke($hasNext) - next")
 
-        synchronized(mutex) {
+        synchronized(lock) {
             if (!hasNext || previousId.isEmpty()) {
                 return flowOf(Result.success(inetNums.toList()))
             }
@@ -41,9 +41,9 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
 
         return inetNumsRepository.getInetNumsByOrgId(id = previousId, offset = offset, limit = LIMIT)
             .map { new ->
-                val newItems = new.getOrNull()
-                if (new.isSuccess && newItems != null) {
-                    synchronized(mutex) {
+                if (new.isSuccess) {
+                    synchronized(lock) {
+                        val newItems = new.getOrDefault(emptyList())
                         hasNext = newItems.size >= LIMIT
                         newItems.forEach { item ->
                             if (inetNums.find { it.id == item.id } == null) {
@@ -66,7 +66,7 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
     operator fun invoke(id: String): Flow<Result<List<InetNum>>> {
         Timber.d("invoke($id) - new")
 
-        synchronized(mutex) {
+        synchronized(lock) {
             if (id == previousId && inetNums.isNotEmpty()) {
                 return flowOf(Result.success(inetNums.toList()))
             }
@@ -78,15 +78,16 @@ class GetInetNumsByOrgIdUseCase @Inject constructor(
                 delay(500)
             }
             .map { new ->
-                val newItems = new.getOrNull()
-                if (new.isSuccess && newItems != null) {
-                    synchronized(mutex) {
+                if (new.isSuccess) {
+                    val items = synchronized(lock) {
+                        val newItems = new.getOrDefault(emptyList())
                         previousId = id
                         hasNext = newItems.size >= LIMIT
                         inetNums.clear()
                         inetNums.addAll(newItems)
-                        Result.success(inetNums.toList())
+                        inetNums.toList()
                     }
+                    Result.success(items)
                 } else {
                     new
                 }
