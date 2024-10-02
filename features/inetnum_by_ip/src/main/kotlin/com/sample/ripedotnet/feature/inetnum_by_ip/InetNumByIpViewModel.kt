@@ -25,6 +25,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -48,6 +49,7 @@ internal class InetNumByIpViewModel @Inject constructor(
     val state: StateFlow<InetNumByIpUiState> = _state.asStateFlow()
 
     private var inetNumJob: Job? = null
+    private var selfIpJob: Job? = null
 
     private fun Flow<Result<InetNum?>>.getInetNum(ip: String): Job =
         map {
@@ -118,19 +120,19 @@ internal class InetNumByIpViewModel @Inject constructor(
     }
 
     fun getSelfIp() {
-        getSelfIpUseCase()
-            .onEach {
-                if (it != null) {
-                    setQuery(it)
-                    queryInetNumByIp(it)
-                } else {
-                    _state.emit(InetNumByIpUiState(
-                        query = "",
-                        state = InetNumByIpUiStates.Empty
-                    ))
-                }
+        selfIpJob?.cancel()
+        selfIpJob = viewModelScope.launch {
+            val ipResult = getSelfIpUseCase()
+            if (ipResult != null) {
+                setQuery(ipResult)
+                queryInetNumByIp(ipResult)
+            } else {
+                _state.emit(InetNumByIpUiState(
+                    query = "",
+                    state = InetNumByIpUiStates.Empty
+                ))
             }
-            .launchIn(scope = viewModelScope)
+        }
     }
 
     private fun setQuery(query: String) {

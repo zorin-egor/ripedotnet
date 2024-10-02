@@ -14,11 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapNotNull
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
@@ -34,26 +30,23 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
             Timber.d("getOrganizationsByName($name, $offset, $limit)")
 
             Timber.d("getOrganizationsByName() - db")
-            organizationsDao.getOrganizations(query = name, offset = offset, limit = limit)
-                .take(1)
-                .filterNot { it.isEmpty() }
-                .map { Result.success(it.toOrgModels()) }
-                .catch { Timber.e(it) }
-                .collect(::emit)
+            kotlin.runCatching {
+                organizationsDao.getOrganizations(query = name, offset = offset, limit = limit)
+            }.onFailure(Timber::e)
+                .getOrNull()?.takeIf { it.isNotEmpty() }
+                    ?.let { emit(Result.success(it.toOrgModels())) }
 
             Timber.d("getOrganizationsByName() - network request")
             val response = networkDatasource.getSearchByName(query = name, offset = offset, limit = limit)
                 .getResultOrThrow()
 
-            val result = response?.networkToOrganizationModel() ?: emptyList()
-
-            emit(Result.success(result))
+            emit(Result.success(response?.networkToOrganizationModel() ?: emptyList()))
 
             Timber.d("getOrganizationsByName() - db write")
             response?.networkToOrganizationsEntities()?.let {
                 scope.launch {
                     runCatching { organizationsDao.insertAll(it) }
-                        .exceptionOrNull()?.let(Timber::e)
+                        .onFailure(Timber::e)
                 }
             }
 
@@ -66,24 +59,20 @@ internal class OrganizationsRepositoryImpl @Inject constructor(
             Timber.d("getOrganizationById($id)")
 
             Timber.d("getOrganizationById() - db")
-            organizationsDao.getOrganizationById(id = id)
-                .take(1)
-                .mapNotNull { it?.toOrgModel() }
-                .map { Result.success(it) }
-                .catch { Timber.e(it) }
-                .collect(::emit)
+            kotlin.runCatching { organizationsDao.getOrganizationById(id = id) }
+                .onFailure(Timber::e)
+                .getOrNull()?.let { emit(Result.success(it.toOrgModel())) }
 
             Timber.d("getOrganizationById() - network request")
             val response = networkDatasource.getOrgDetails(orgId = id).getResultOrThrow()
-            val result = response?.networkToOrganizationModel()?.firstOrNull()
 
-            emit(Result.success(result))
+            emit(Result.success(response?.networkToOrganizationModel()?.firstOrNull()))
 
             Timber.d("getOrganizationById() - db write")
             response?.networkToOrganizationsEntities()?.let {
                 scope.launch {
                     runCatching { organizationsDao.insertAll(it) }
-                        .exceptionOrNull()?.let(Timber::e)
+                        .onFailure(Timber::e)
                 }
             }
 

@@ -22,10 +22,10 @@ interface OrganizationsDao {
                 "Organizations.name LIKE '%' || ' ' || :query || ' ' || '%' " +
                 "ORDER BY Organizations.org_id LIMIT :limit OFFSET :offset"
     )
-    fun getOrganizations(query: String, offset: Int, limit: Int = 30): Flow<List<OrganizationsEntity>>
+    suspend fun getOrganizations(query: String, offset: Int, limit: Int = 30): List<OrganizationsEntity>
 
     @Query("SELECT * FROM Organizations WHERE Organizations.org_id LIKE :id")
-    fun getOrganizationById(id: String): Flow<OrganizationsEntity?>
+    suspend fun getOrganizationById(id: String): OrganizationsEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(user: OrganizationsEntity)

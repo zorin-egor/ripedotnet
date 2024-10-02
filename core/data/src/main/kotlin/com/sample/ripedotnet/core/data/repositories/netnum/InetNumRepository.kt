@@ -9,6 +9,6 @@ interface InetNumRepository {
 
     fun getInetNumsByOrgId(id: String, offset: Int, limit: Int = 30): Flow<Result<List<InetNum>>>
 
-    fun getSelfIp(): Flow<String?>
+    suspend fun getSelfIp(): String?
 
 }
