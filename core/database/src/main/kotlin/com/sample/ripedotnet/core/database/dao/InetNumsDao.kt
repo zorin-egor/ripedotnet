@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 interface InetNumsDao {
 
     @Query("SELECT * FROM InetNum")
-    fun getInetNums(): Flow<List<InetNumEntity>>
+    suspend fun getInetNums(): List<InetNumEntity>
 
     @Query("SELECT * FROM InetNum WHERE InetNum.name LIKE '%' || :query || '%' " +
             "ORDER BY InetNum.name LIMIT :limit OFFSET :offset")

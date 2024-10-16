@@ -6,14 +6,13 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.sample.ripedotnet.core.database.model.OrganizationsEntity
-import kotlinx.coroutines.flow.Flow
 
 
 @Dao
 interface OrganizationsDao {
 
     @Query("SELECT * FROM Organizations")
-    fun getOrganizations(): Flow<List<OrganizationsEntity>>
+    suspend fun getOrganizations(): List<OrganizationsEntity>
 
     @Query(
         "SELECT * FROM Organizations " +
