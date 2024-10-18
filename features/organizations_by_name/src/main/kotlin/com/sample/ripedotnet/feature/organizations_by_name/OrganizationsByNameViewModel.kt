@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sample.ripedotnet.core.domain.GetOrganizationsByNameUseCase
 import com.sample.ripedotnet.core.model.logic.Organization
-import com.sample.ripedotnet.core.network.exceptions.NetworkException
 import com.sample.ripedotnet.core.ui.ext.getErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -46,15 +45,22 @@ internal class OrganizationsByNameViewModel @Inject constructor(
 
     private var organizationsJob: Job? = null
 
-    private fun Flow<Result<List<Organization>>>.getOrganizations(query: String, isDelay: Boolean = false): Job =
-        map {
-            val items = it.getOrNull()
-            val error = it.exceptionOrNull()
+    private fun Flow<Result<List<Organization>>>.getOrganizations(query: String): Job =
+        map { result ->
+            val items = result.getOrNull()
+            val exception = result.exceptionOrNull()
             val state = when {
-                it.isSuccess && items?.isNotEmpty() == true -> OrganizationsByNameUiStates.Success(organizations = items, isBottomProgress = false)
-                it.isSuccess && items?.isNotEmpty() == false -> OrganizationsByNameUiStates.Empty
-                it.isFailure && error != null -> throw error
-                else -> throw IllegalStateException("Unknown state")
+                result.isSuccess && items?.isEmpty() == true -> OrganizationsByNameUiStates.Empty
+                result.isSuccess && items?.isNotEmpty() == true -> OrganizationsByNameUiStates.Success(
+                    organizations = items,
+                    isBottomProgress = false
+                )
+                else -> {
+                    val error = context.getErrorMessage(exception)
+                    Timber.e(error)
+                    _action.emit(OrganizationsByNameActions.ShowError(error))
+                    OrganizationsByNameUiStates.Empty
+                }
             }
 
             OrganizationsByNameUiState(
@@ -64,18 +70,8 @@ internal class OrganizationsByNameViewModel @Inject constructor(
         }
         .onEach(_state::emit)
         .catch {
-            val error = context.getErrorMessage(it)
-            Timber.e(error)
-
-            if (it is NetworkException) {
-                _state.emit(OrganizationsByNameUiState(
-                    query = query,
-                    state = OrganizationsByNameUiStates.Empty
-                ))
-            } else {
-                _action.emit(OrganizationsByNameActions.ShowError(error))
-            }
-
+            Timber.e(it)
+            _action.emit(OrganizationsByNameActions.ShowError(context.getErrorMessage(it)))
             setBottomProgress(false)
         }
         .launchIn(scope = viewModelScope)
@@ -112,7 +108,7 @@ internal class OrganizationsByNameViewModel @Inject constructor(
                 Timber.d("nextOrganizations() - onStart")
                 setBottomProgress(true)
             }
-            .getOrganizations(query = previousQuery, isDelay = true)
+            .getOrganizations(query = previousQuery)
     }
 
     private suspend fun setBottomProgress(isBottomProgress: Boolean) {

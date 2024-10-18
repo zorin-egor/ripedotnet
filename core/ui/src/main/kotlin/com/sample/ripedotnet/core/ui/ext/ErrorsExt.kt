@@ -18,12 +18,12 @@ val NETWORK_ERRORS = mapOf(
     HttpURLConnection.HTTP_INTERNAL_ERROR to R.string.error_network_500,
 )
 
-fun Context.getErrorMessage(error: Throwable): String {
+fun Context.getErrorMessage(error: Throwable?): String {
     return when(error) {
         is UnknownHostException -> getString(R.string.error_network_no_internet)
         is NetworkException -> NETWORK_ERRORS[error.errorCode]
             ?.let { runCatching { getString(it) }}
             ?.getOrNull()
-        else -> error.message
+        else -> error?.message
     } ?: getString(R.string.error_unknown)
 }

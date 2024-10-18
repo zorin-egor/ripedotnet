@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sample.ripedotnet.core.domain.GetInetNumsByOrgIdUseCase
 import com.sample.ripedotnet.core.model.logic.InetNum
-import com.sample.ripedotnet.core.network.exceptions.NetworkException
 import com.sample.ripedotnet.core.ui.ext.getErrorMessage
 import com.sample.ripedotnet.feature.inetnums_by_org_id.navigation.InetNumsByOrgIdArgs
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -53,30 +52,27 @@ internal class InetNumsByOrgIdViewModel @Inject constructor(
     }
 
     private fun Flow<Result<List<InetNum>>>.getInetNumsByOrgId(): Job =
-        map {
-            val items = it.getOrNull()
-            val error = it.exceptionOrNull()
+        map { result ->
+            val items = result.getOrNull()
+            val exception = result.exceptionOrNull()
+
             when {
-                it.isSuccess && items?.isNotEmpty() == true -> InetNumsByOrgIdUiState.Success(
+                result.isSuccess && items?.isEmpty() == true -> InetNumsByOrgIdUiState.Empty
+                result.isSuccess && items?.isNotEmpty() == true -> InetNumsByOrgIdUiState.Success(
                     inetNums = items,
                     isBottomProgress = false
                 )
-                it.isSuccess && items?.isNotEmpty() == false -> InetNumsByOrgIdUiState.Empty
-                it.isFailure && error != null -> throw error
-                else -> throw IllegalStateException("Unknown state")
+                else -> {
+                    val error = context.getErrorMessage(exception)
+                    _action.emit(InetNumsByOrgIdActions.ShowError(error))
+                    InetNumsByOrgIdUiState.Empty
+                }
             }
         }
         .onEach(_state::emit)
         .catch {
-            val error = context.getErrorMessage(it)
-            Timber.e(error)
-
-            if (it is NetworkException) {
-                _state.emit(InetNumsByOrgIdUiState.Empty)
-            } else {
-                _action.emit(InetNumsByOrgIdActions.ShowError(error))
-            }
-
+            Timber.e(t = it, message = "catch")
+            _action.emit(InetNumsByOrgIdActions.ShowError(context.getErrorMessage(it)))
             setBottomProgress(false)
         }
         .launchIn(scope = viewModelScope)

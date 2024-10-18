@@ -8,7 +8,6 @@ import com.sample.ripedotnet.core.common.extensions.isIpValid
 import com.sample.ripedotnet.core.domain.GetInetNumByIpUseCase
 import com.sample.ripedotnet.core.domain.GetSelfIpUseCase
 import com.sample.ripedotnet.core.model.logic.InetNum
-import com.sample.ripedotnet.core.network.exceptions.NetworkException
 import com.sample.ripedotnet.core.ui.ext.getErrorMessage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -52,14 +51,18 @@ internal class InetNumByIpViewModel @Inject constructor(
     private var selfIpJob: Job? = null
 
     private fun Flow<Result<InetNum?>>.getInetNum(ip: String): Job =
-        map {
-            val item = it.getOrNull()
-            val error = it.exceptionOrNull()
+        map { result ->
+            val item = result.getOrNull()
+            val exception = result.exceptionOrNull()
             val state = when {
-                it.isSuccess && item != null -> InetNumByIpUiStates.Success(inetNum = item)
-                it.isSuccess && item == null -> InetNumByIpUiStates.Empty
-                it.isFailure && error != null -> throw error
-                else -> throw IllegalStateException("Unknown state")
+                result.isSuccess && item != null -> InetNumByIpUiStates.Success(inetNum = item)
+                result.isSuccess && item == null -> InetNumByIpUiStates.Empty
+                else -> {
+                    val error = context.getErrorMessage(exception)
+                    Timber.e(error)
+                    _action.emit(InetNumByIpActions.ShowError(error))
+                    InetNumByIpUiStates.Empty
+                }
             }
 
             InetNumByIpUiState(
@@ -69,17 +72,8 @@ internal class InetNumByIpViewModel @Inject constructor(
         }
         .onEach(_state::emit)
         .catch {
-            val error = context.getErrorMessage(it)
-            Timber.e(error)
-
-            if (it is NetworkException) {
-                _state.emit(InetNumByIpUiState(
-                    query = ip,
-                    state = InetNumByIpUiStates.Empty
-                ))
-            } else {
-                _action.emit(InetNumByIpActions.ShowError(error))
-            }
+            Timber.e(t = it, message = "catch")
+            _action.emit(InetNumByIpActions.ShowError(context.getErrorMessage(it)))
         }
         .launchIn(scope = viewModelScope)
 
